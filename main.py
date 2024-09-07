@@ -130,3 +130,5 @@ async def on_presence_update(before, after):
 webserver.keep_alive()
 # Inicializa o bot
 bot.run(TOKEN)
+
+
