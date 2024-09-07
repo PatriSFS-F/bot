@@ -5,6 +5,7 @@ import webserver
 import logging
 
 # Configuração do bot com intents ativados
+
 intents = discord.Intents.default()
 intents.presences = True 
 intents.messages = True  
@@ -14,6 +15,7 @@ intents.members = True
 intents.dm_messages = True 
 
 # Configurações do bot
+
 TOKEN = os.environ.get('discordkey')
 ROLE_NAME = '📺⠂Ao vivo' 
 STREAMER_ROLE_NAME = 'Streamer' 
@@ -21,6 +23,7 @@ KEYWORDS = ['Code', 'CODE', 'code', 'CodeRp','[CodeRp]']
 ALLOWED_GUILD_ID = 1249889579041820823
 
 # dev e Gaucheira
+
 AUTHORIZED_USERS = [757934740308361247, 691679550140055573]
 TARGET_CHANNEL_ID = 1257959837866786868
 
