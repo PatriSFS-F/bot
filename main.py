@@ -3,21 +3,23 @@ from discord.ext import commands
 import os
 import webserver
 import logging
+import asyncio
+from discord.errors import HTTPException
 
 # Configuração do bot com intents ativados
 intents = discord.Intents.default()
-intents.presences = True 
-intents.messages = True  
-intents.guilds = True  
+intents.presences = True
+intents.messages = True
+intents.guilds = True
 intents.message_content = True
-intents.members = True 
-intents.dm_messages = True 
+intents.members = True
+intents.dm_messages = True
 
 # Configurações do bot
 TOKEN = os.environ.get('discordkey')
 ROLE_NAME = '📺⠂Ao vivo' 
 STREAMER_ROLE_NAME = 'Streamer' 
-KEYWORDS = ['Code', 'CODE', 'code', 'CodeRp','[CodeRp]']
+KEYWORDS = ['Code', 'CODE', 'code', 'CodeRp', '[CodeRp]']
 ALLOWED_GUILD_ID = 1249889579041820823
 
 # dev e Gaucheira
@@ -29,10 +31,15 @@ logger = logging.getLogger('discord')
 
 bot = commands.Bot(command_prefix='$', intents=intents)
 
+# Função para lidar com rate limits
+async def handle_rate_limit(retry_after):
+    logger.warning(f'Rate limited! Aguardando {retry_after:.2f} segundos.')
+    await asyncio.sleep(retry_after)
+
 @bot.event
 async def on_guild_join(guild):
     if guild.id != ALLOWED_GUILD_ID:
-        await guild.leave()  # Faz o bot sair de outros servidores
+        await guild.leave()  # Faz o bot sair de outros servidores não autorizados
         logger.info(f'Saiu do servidor não autorizado: {guild.name} (ID: {guild.id})')
 
 # Função de inicialização
@@ -51,13 +58,23 @@ async def on_message(message):
         if message.author.id in AUTHORIZED_USERS:
             target_channel = bot.get_channel(TARGET_CHANNEL_ID)
             if target_channel:
-                await target_channel.send(f"{message.content}")
-                logger.info(f'Redirecionou mensagem privada de {message.author} para o canal {target_channel.name}.')
+                try:
+                    await target_channel.send(f"{message.content}")
+                    logger.info(f'Redirecionou mensagem privada de {message.author} para o canal {target_channel.name}.')
+                except HTTPException as e:
+                    if e.code == 429:  # Rate limit
+                        await handle_rate_limit(e.retry_after)
+                    else:
+                        logger.error(f'Erro ao enviar mensagem: {e}')
             else:
                 logger.error(f'Canal com ID {TARGET_CHANNEL_ID} não encontrado.')
         else:
             logger.warning(f'{message.author} tentou enviar uma mensagem, mas não está autorizado.')
     
+    
+    # Permite que outros comandos sejam processados
+
+    # Permite que outros comandos sejam processados
     await bot.process_commands(message)
 
 @bot.command(name='teste')
@@ -72,7 +89,7 @@ async def teste(ctx):
 @bot.event
 async def on_presence_update(before, after):
     guild = after.guild
-    
+
     if before.activities == after.activities:  # Sem mudança nas atividades
         return
 
@@ -80,18 +97,29 @@ async def on_presence_update(before, after):
     streamer_role = discord.utils.get(guild.roles, name=STREAMER_ROLE_NAME)
 
     if role and streamer_role and streamer_role in after.roles:
-        # Checa se o usuário está fazendo live com palavra-chave
         streaming_activity = next((activity for activity in after.activities if activity.type == discord.ActivityType.streaming and contains_keyword(activity.name)), None)
 
         if streaming_activity and role not in after.roles:
             try:
                 await after.add_roles(role)
+                        print(f'Cargo "{ROLE_NAME}" atribuído a {after.display_name}')
+                        print(f'Cargo "{ROLE_NAME}" atribuído a {after.display_name}')
+                        
+                        # Envia a mensagem para o canal específico
                 print(f'Cargo "{ROLE_NAME}" atribuído a {after.display_name}')
+                        
+                        # Envia a mensagem para o canal específico
                 target_channel = bot.get_channel(TARGET_CHANNEL_ID)
                 if target_channel:
                     message = f"{after.display_name} está ao vivo! Assista em {streaming_activity.url}" if streaming_activity.url else f"{after.display_name} está ao vivo! Link não disponível"
-                    await target_channel.send(message)
-                    logger.info(f'Mensagem enviada: {message}')
+                    try:
+                        await target_channel.send(message)
+                        logger.info(f'Mensagem enviada: {message}')
+                    except HTTPException as e:
+                        if e.code == 429:  # Rate limit
+                            await handle_rate_limit(e.retry_after)
+                        else:
+                            logger.error(f'Erro ao enviar mensagem ao canal: {e}')
                 else:
                     logger.error(f'Canal com ID {TARGET_CHANNEL_ID} não encontrado.')
             except discord.Forbidden:
@@ -111,5 +139,6 @@ async def on_presence_update(before, after):
 
 # Mantém o bot ativo
 webserver.keep_alive()
+
 # Inicializa o bot
 bot.run(TOKEN)
