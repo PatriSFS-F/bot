@@ -17,8 +17,8 @@ intents.dm_messages = True
 
 # Configurações do bot
 TOKEN = os.environ.get('discordkey')
-ROLE_NAME = '📺⠂Ao vivo' 
-STREAMER_ROLE_NAME = 'Streamer' 
+ROLE_NAME = '📺⠂Ao vivo'
+STREAMER_ROLE_NAME = 'Streamer'
 KEYWORDS = ['Code', 'CODE', 'code', 'CodeRp', '[CodeRp]']
 ALLOWED_GUILD_ID = 1249889579041820823
 
@@ -70,11 +70,7 @@ async def on_message(message):
                 logger.error(f'Canal com ID {TARGET_CHANNEL_ID} não encontrado.')
         else:
             logger.warning(f'{message.author} tentou enviar uma mensagem, mas não está autorizado.')
-    
-    
-    # Permite que outros comandos sejam processados
 
-    # Permite que outros comandos sejam processados
     await bot.process_commands(message)
 
 @bot.command(name='teste')
@@ -102,13 +98,7 @@ async def on_presence_update(before, after):
         if streaming_activity and role not in after.roles:
             try:
                 await after.add_roles(role)
-                        print(f'Cargo "{ROLE_NAME}" atribuído a {after.display_name}')
-                        print(f'Cargo "{ROLE_NAME}" atribuído a {after.display_name}')
-                        
-                        # Envia a mensagem para o canal específico
                 print(f'Cargo "{ROLE_NAME}" atribuído a {after.display_name}')
-                        
-                        # Envia a mensagem para o canal específico
                 target_channel = bot.get_channel(TARGET_CHANNEL_ID)
                 if target_channel:
                     message = f"{after.display_name} está ao vivo! Assista em {streaming_activity.url}" if streaming_activity.url else f"{after.display_name} está ao vivo! Link não disponível"
